@@ -195,7 +195,7 @@ onMounted(loadRows);
       </article>
     </div>
 
-    <form class="tool-editor" @submit.prevent="saveRow">
+    <form class="tool-editor panel" @submit.prevent="saveRow">
       <div class="editor-title">
         <strong>{{ editingId ? '编辑工具' : '新增工具' }}</strong>
         <button v-if="editingId" class="secondary-button compact" type="button" @click="resetForm">取消编辑</button>
@@ -215,37 +215,43 @@ onMounted(loadRows);
       </button>
     </form>
 
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>名称</th>
-          <th>分类</th>
-          <th>地址</th>
-          <th>状态</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in rows" :key="row.id">
-          <td>{{ row.id }}</td>
-          <td>{{ row.name }}</td>
-          <td>{{ row.category }}</td>
-          <td class="url-cell">{{ row.url }}</td>
-          <td>
-            <span class="status-pill" :class="row.status">{{ row.status }}</span>
-          </td>
-          <td class="table-actions">
-            <button type="button" title="预览" @click="selectRow(row)">
-              <Eye :size="15" />
-            </button>
-            <button type="button" @click="editRow(row)">编辑</button>
-            <button type="button" title="删除" @click="removeRow(row.id)">
-              <Trash2 :size="15" />
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <section class="panel table-panel">
+      <div class="panel-header">
+        <strong>工具列表</strong>
+        <span>共 {{ rows.length }} 条</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>名称</th>
+            <th>分类</th>
+            <th>地址</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in rows" :key="row.id">
+            <td>{{ row.id }}</td>
+            <td>{{ row.name }}</td>
+            <td>{{ row.category }}</td>
+            <td class="url-cell">{{ row.url }}</td>
+            <td>
+              <span class="status-pill" :class="row.status">{{ row.status }}</span>
+            </td>
+            <td class="table-actions">
+              <button type="button" title="预览" @click="selectRow(row)">
+                <Eye :size="15" />
+              </button>
+              <button type="button" @click="editRow(row)">编辑</button>
+              <button type="button" title="删除" @click="removeRow(row.id)">
+                <Trash2 :size="15" />
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
   </section>
 </template>
