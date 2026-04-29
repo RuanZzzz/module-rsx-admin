@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算盘教学</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .digit-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding: 0 15px;
+        }
+
+        .digit-box {
+            width: 48px;
+            height: 60px;
+            background-color: #1a1a1a;
+            color: #ff3333;
+            font-size: 30px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: opacity 0.3s;
+        }
+
+        .digit-box.hidden-text { color: transparent; }
+
+        .abacus-wrapper {
+            border: 8px solid #f1c40f;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #ffffff;
+            display: flex;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .column {
+            width: 45px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            margin: 0 6px;
+        }
+
+        .rod-line {
+            position: absolute;
+            width: 4px;
+            height: 100%;
+            background-color: #95a5a6;
+            z-index: 1;
+        }
+
+        .top-deck {
+            height: 100px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .beam {
+            width: calc(100% + 12px);
+            height: 40px;
+            background-color: #0b1a4a;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10;
+            margin: 0 -6px;
+        }
+
+        .bottom-deck {
+            height: 220px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .bead {
+            width: 42px;
+            height: 24px;
+            border-radius: 20px;
+            position: absolute;
+            cursor: pointer;
+            left: 1.5px;
+            transition: top 0.2s ease, bottom 0.2s ease;
+            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.2), 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .bead:active { transform: scale(0.95); }
+        .bead-top    { background: linear-gradient(135deg, #f39c12, #d35400); }
+        .bead-bottom { background: linear-gradient(135deg, #3498db, #2980b9); }
+
+        .side-panel {
+            position: absolute;
+            left: calc(100% + 30px);
+            top: -8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 280px;
+        }
+
+        .result-card {
+            background: #ffffff;
+            border: 4px dashed #3498db;
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+            margin: 0;
+        }
+
+        .result-card.show { opacity: 1; transform: translateX(0); }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .result-text {
+            color: #e74c3c;
+            font-weight: bold;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .write-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 32px;
+            letter-spacing: 2px;
+        }
+
+        .read-text {
+            font-family: 'KaiTi', '楷体', serif;
+            font-size: 28px;
+        }
+
+        /* ===================== 全屏画布 ===================== */
+        #draw-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
+            display: none;
+            cursor: crosshair;
+            box-shadow: inset 0 0 0 4px rgba(231,76,60,0.45);
+        }
+
+        #draw-canvas.active { display: block; }
+
+        /* ===================== 底部工具栏 ===================== */
+        .draw-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.97);
+            border: 3px solid #e74c3c;
+            border-bottom: none;
+            border-radius: 14px 14px 0 0;
+            padding: 12px 22px 16px;
+            box-shadow: 0 -6px 24px rgba(0,0,0,0.15);
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 95vw;
+            box-sizing: border-box;
+        }
+
+        .draw-toolbar.active { display: flex; }
+
+        .toolbar-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        .color-picker-wrap {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform 0.15s, border-color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .color-dot:hover { transform: scale(1.2); }
+        .color-dot.selected { border-color: #333; transform: scale(1.2); }
+
+        .size-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="range"] {
+            width: 88px;
+            accent-color: #e74c3c;
+        }
+
+        .size-preview {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .size-dot {
+            border-radius: 50%;
+            background: #e74c3c;
+            transition: width 0.1s, height 0.1s;
+        }
+
+        /* 工具栏按钮 */
+        .tool-btn {
+            padding: 7px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            color: white;
+            white-space: nowrap;
+            transition: filter 0.2s, transform 0.1s;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+        }
+
+        .tool-btn:hover  { filter: brightness(1.1); }
+        .tool-btn:active { transform: scale(0.95); box-shadow: none; }
+        .tool-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+
+        .tool-btn.eraser-btn { background: #7f8c8d; }
+        .tool-btn.eraser-btn.active-tool { background: #555; outline: 3px solid #222; }
+        .tool-btn.undo-btn   { background: #3498db; }
+        .tool-btn.clear-btn  { background: #e67e22; }
+        .tool-btn.close-btn  { background: #c0392b; }
+
+        /* 主按钮区 */
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.1s, filter 0.2s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 170px;
+            justify-content: center;
+        }
+
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn:hover  { filter: brightness(1.1); }
+
+        .btn-yellow { background-color: #f39c12; }
+        .btn-green  { background-color: #2ecc71; }
+        .btn-blue   { background-color: #3498db; }
+        .btn-purple { background-color: #9b59b6; }
+        .btn-orange { background-color: #e67e22; }
+        .btn-red    { background-color: #e74c3c; }
+
+        .decomp-panel {
+            margin-top: 25px;
+            background: #ffffff;
+            border: 4px dashed #e67e22;
+            border-radius: 12px;
+            padding: 15px 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            font-size: 28px;
+            font-weight: bold;
+            color: #e74c3c;
+            display: none;
+            text-align: center;
+            max-width: 800px;
+            line-height: 1.5;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .decomp-panel.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+    <div class="digit-container" id="digit-container"></div>
+    <div class="abacus-wrapper" id="abacus-wrapper">
+        <div id="columns-container" style="display:flex;"></div>
+        <div class="side-panel">
+            <div class="result-card" id="card-write">
+                <div class="result-title">✍️ 写作：</div>
+                <div class="result-text write-text" id="res-write">0</div>
+            </div>
+            <div class="result-card" id="card-read">
+                <div class="result-title">🗣️ 读作：</div>
+                <div class="result-text read-text" id="res-read">零</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="controls">
+    <button class="btn btn-yellow" onclick="resetAbacus()">🔄 重置归零</button>
+    <button class="btn btn-green"  id="toggle-btn" onclick="toggleNumbers()">👁️ 隐藏黑色数字</button>
+    <button class="btn btn-blue"   id="btn-write"  onclick="toggleWrite()">✍️ 显示写作</button>
+    <button class="btn btn-purple" id="btn-read"   onclick="toggleRead()">🗣️ 显示读作</button>
+    <button class="btn btn-orange" id="btn-decomp" onclick="toggleDecomp()">🧩 显示数位分解</button>
+    <button class="btn btn-red"    id="btn-draw"   onclick="toggleDraw()">🖊️ 开启书写</button>
+</div>
+
+<div class="decomp-panel" id="decomp-panel">
+    <span id="res-decomp">0个一</span>
+</div>
+
+<!-- 全屏画布 -->
+<canvas id="draw-canvas"></canvas>
+
+<!-- 底部工具栏 -->
+<div class="draw-toolbar" id="draw-toolbar">
+
+    <span class="toolbar-label">🎨 颜色：</span>
+    <div class="color-picker-wrap">
+        <div class="color-dot selected" style="background:#e74c3c;"                    data-color="#e74c3c"></div>
+        <div class="color-dot"          style="background:#e67e22;"                    data-color="#e67e22"></div>
+        <div class="color-dot"          style="background:#f1c40f;"                    data-color="#f1c40f"></div>
+        <div class="color-dot"          style="background:#2ecc71;"                    data-color="#2ecc71"></div>
+        <div class="color-dot"          style="background:#3498db;"                    data-color="#3498db"></div>
+        <div class="color-dot"          style="background:#9b59b6;"                    data-color="#9b59b6"></div>
+        <div class="color-dot"          style="background:#1a1a1a;"                    data-color="#1a1a1a"></div>
+        <div class="color-dot"          style="background:#fff;border:2px solid #ccc;" data-color="#ffffff"></div>
+    </div>
+
+    <div class="size-wrap">
+        <span class="toolbar-label">✏️ 粗细：</span>
+        <input type="range" id="brush-size" min="2" max="30" value="5">
+        <div class="size-preview">
+            <div class="size-dot" id="size-dot" style="width:5px;height:5px;background:#e74c3c;"></div>
+        </div>
+    </div>
+
+    <button class="tool-btn eraser-btn" id="eraser-btn" onclick="toggleEraser()">🧹 橡皮擦</button>
+    <button class="tool-btn undo-btn"   id="undo-btn"   onclick="undo()" disabled>↩️ 撤销</button>
+    <button class="tool-btn clear-btn"  onclick="clearCanvas()">🗑️ 清除全部</button>
+    <button class="tool-btn close-btn"  onclick="toggleDraw()">✖ 关闭书写</button>
+
+</div>
+
+<script>
+    const placeNames  = ["千亿","百亿","十亿","亿位","千万","百万","十万","万位","千位","百位","十位","个位"];
+    const decompUnits = ["千亿","百亿","十亿","亿","千万","百万","十万","万","千","百","十","一"];
+    const COL_COUNT   = 12;
+
+    let abacusState      = Array.from({length: COL_COUNT}, () => ({topActive:0, bottomActive:0}));
+    let isNumbersVisible = true;
+    let isWriteVisible   = false;
+    let isReadVisible    = false;
+    let isDecompVisible  = false;
+    let isAnimating      = false;
+
+    /* -------- 画布变量 -------- */
+    let isDrawMode = false;
+    let isPainting = false;
+    let isEraser   = false;
+    let brushColor = '#e74c3c';
+    let brushSize  = 5;
+    let lastX = 0, lastY = 0;
+
+    // 撤销栈：每次 mouseup / touchend 把当前画布快照压栈
+    const MAX_UNDO = 30;
+    let undoStack  = [];
+
+    const canvas  = document.getElementById('draw-canvas');
+    const ctx     = canvas.getContext('2d');
+    const toolbar = document.getElementById('draw-toolbar');
+
+    /* ======================================================
+       初始化
+    ====================================================== */
+    function init() {
+        const digitContainer   = document.getElementById('digit-container');
+        const columnsContainer = document.getElementById('columns-container');
+
+        for (let i = 0; i < COL_COUNT; i++) {
+            const digitBox = document.createElement('div');
+            digitBox.className = 'digit-box';
+            digitBox.id = `digit-${i}`;
+            digitBox.innerText = '0';
+            digitContainer.appendChild(digitBox);
+
+            const col = document.createElement('div');
+            col.className = 'column';
+            const rod = document.createElement('div');
+            rod.className = 'rod-line';
+            col.appendChild(rod);
+
+            const topDeck = document.createElement('div');
+            topDeck.className = 'top-deck';
+            for (let j = 0; j < 2; j++) {
+                const b = document.createElement('div');
+                b.className = 'bead bead-top';
+                b.id = `bead-top-${i}-${j}`;
+                b.onclick = () => handleTopClick(i, j);
+                topDeck.appendChild(b);
+            }
+            col.appendChild(topDeck);
+
+            const beam = document.createElement('div');
+            beam.className = 'beam';
+            beam.innerText = placeNames[i];
+            col.appendChild(beam);
+
+            const botDeck = document.createElement('div');
+            botDeck.className = 'bottom-deck';
+            for (let j = 0; j < 5; j++) {
+                const b = document.createElement('div');
+                b.className = 'bead bead-bottom';
+                b.id = `bead-bottom-${i}-${j}`;
+                b.onclick = () => handleBottomClick(i, j);
+                botDeck.appendChild(b);
+            }
+            col.appendChild(botDeck);
+            columnsContainer.appendChild(col);
+        }
+
+        renderBeads();
+        syncCanvasSize();
+        initColorPicker();
+        initBrushSize();
+        window.addEventListener('resize', syncCanvasSize);
+
+        // Ctrl+Z 全局撤销快捷键
+        window.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && isDrawMode) {
+                e.preventDefault();
+                undo();
+            }
+        });
+    }
+
+    /* ======================================================
+       画布尺寸 = 视口大小
+    ====================================================== */
+    function syncCanvasSize() {
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        if (canvas.width === W && canvas.height === H) return;
+
+        // 保留内容
+        let img = null;
+        if (canvas.width > 0 && canvas.height > 0) {
+            img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+        canvas.width  = W;
+        canvas.height = H;
+        if (img) ctx.putImageData(img, 0, 0);
+    }
+
+    /* ======================================================
+       开启 / 关闭书写
+    ====================================================== */
+    function toggleDraw() {
+        isDrawMode = !isDrawMode;
+        const btn = document.getElementById('btn-draw');
+
+        if (isDrawMode) {
+            syncCanvasSize();
+            undoStack = [];           // 进入时清空历史
+            updateUndoBtn();
+            canvas.classList.add('active');
+            toolbar.classList.add('active');
+            btn.innerHTML = '🖊️ 书写中…';
+            btn.style.backgroundColor = '#c0392b';
+        } else {
+            canvas.classList.remove('active');
+            toolbar.classList.remove('active');
+            btn.innerHTML = '🖊️ 开启书写';
+            btn.style.backgroundColor = '#e74c3c';
+            clearCanvas();
+            undoStack = [];
+            updateUndoBtn();
+            isEraser = false;
+            const eb = document.getElementById('eraser-btn');
+            eb.classList.remove('active-tool');
+            eb.innerText = '🧹 橡皮擦';
+            canvas.style.cursor = 'crosshair';
+        }
+    }
+
+    /* ======================================================
+       撤销
+    ====================================================== */
+    function saveSnapshot() {
+        if (undoStack.length >= MAX_UNDO) undoStack.shift();
+        undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        updateUndoBtn();
+    }
+
+    function undo() {
+        if (undoStack.length === 0) return;
+        const snap = undoStack.pop();
+        ctx.putImageData(snap, 0, 0);
+        updateUndoBtn();
+    }
+
+    function updateUndoBtn() {
+        const btn = document.getElementById('undo-btn');
+        btn.disabled = undoStack.length === 0;
+        btn.textContent = `↩️ 撤销${undoStack.length > 0 ? '('+undoStack.length+')' : ''}`;
+    }
+
+    /* ======================================================
+       画布绘图事件
+    ====================================================== */
+    canvas.addEventListener('mousedown', e => {
+        isPainting = true;
+        const p = getPos(e);
+        lastX = p.x; lastY = p.y;
+        // 落笔前保存快照（一次完整笔画对应一次撤销）
+        saveSnapshot();
+        drawDot(lastX, lastY);
+    });
+
+    canvas.addEventListener('mousemove', e => {
+        if (!isPainting) return;
+        const p = getPos(e);
+        drawLine(lastX, lastY, p.x, p.y);
+        lastX = p.x; lastY = p.y;
+    });
+
+    canvas.addEventListener('mouseup',    () => isPainting = false);
+    canvas.addEventListener('mouseleave', () => isPainting = false);
+
+    // 触屏
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        isPainting = true;
+        const p = getPos(e.touches[0]);
+        lastX = p.x; lastY = p.y;
+        saveSnapshot();
+        drawDot(lastX, lastY);
+    }, {passive: false});
+
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        if (!isPainting) return;
+        const p = getPos(e.touches[0]);
+        drawLine(lastX, lastY, p.x, p.y);
+        lastX = p.x; lastY = p.y;
+    }, {passive: false});
+
+    canvas.addEventListener('touchend', () => isPainting = false);
+
+    // canvas 是 fixed 全屏，clientX/Y 直接等于画布坐标
+    function getPos(e) {
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    function applyStyle() {
+        ctx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over';
+        ctx.strokeStyle = isEraser ? 'rgba(0,0,0,1)' : brushColor;
+        ctx.fillStyle   = isEraser ? 'rgba(0,0,0,1)' : brushColor;
+        ctx.lineWidth   = isEraser ? brushSize * 3 : brushSize;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
+    }
+
+    function drawDot(x, y) {
+        applyStyle();
+        ctx.beginPath();
+        ctx.arc(x, y, (isEraser ? brushSize * 3 : brushSize) / 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawLine(x1, y1, x2, y2) {
+        applyStyle();
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    /* ======================================================
+       橡皮擦 / 清除
+    ====================================================== */
+    function toggleEraser() {
+        isEraser = !isEraser;
+        const btn = document.getElementById('eraser-btn');
+        btn.classList.toggle('active-tool', isEraser);
+        btn.innerText       = isEraser ? '✏️ 切回画笔' : '🧹 橡皮擦';
+        canvas.style.cursor = isEraser ? 'cell' : 'crosshair';
+    }
+
+    function clearCanvas() {
+        if (canvas.width > 0) saveSnapshot();   // 清除也可撤销
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        updateUndoBtn();
+    }
+
+    /* ======================================================
+       颜色 & 笔刷大小
+    ====================================================== */
+    function initColorPicker() {
+        document.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+                dot.classList.add('selected');
+                brushColor = dot.dataset.color;
+                isEraser = false;
+                const eb = document.getElementById('eraser-btn');
+                eb.classList.remove('active-tool');
+                eb.innerText = '🧹 橡皮擦';
+                canvas.style.cursor = 'crosshair';
+                document.getElementById('size-dot').style.background = brushColor;
+            });
+        });
+    }
+
+    function initBrushSize() {
+        const slider  = document.getElementById('brush-size');
+        const sizeDot = document.getElementById('size-dot');
+        slider.addEventListener('input', () => {
+            brushSize = parseInt(slider.value);
+            sizeDot.style.width  = brushSize + 'px';
+            sizeDot.style.height = brushSize + 'px';
+        });
+    }
+
+    /* ======================================================
+       算盘逻辑
+    ====================================================== */
+    function getAbacusValueStr() {
+        let str = '';
+        for (let i = 0; i < COL_COUNT; i++)
+            str += (abacusState[i].topActive * 5) + abacusState[i].bottomActive;
+        return str.replace(/^0+/, '') || '0';
+    }
+
+    function getChineseNumber(s) {
+        if (!s || s === '0') return '零';
+        const num = ['零','一','二','三','四','五','六','七','八','九'];
+        const rad = ['','十','百','千'];
+        const uni = ['','万','亿'];
+        let len = s.length, res = '', zero = 0;
+        for (let i = 0; i < len; i++) {
+            let n = +s[i], p = len-i-1, q = Math.floor(p/4), m = p%4;
+            if (n === 0) { zero++; }
+            else { if (zero) res += num[0]; zero = 0; res += num[n] + rad[m]; }
+            if (m === 0 && zero < 4) res += uni[q];
+            if (m === 0) zero = 0;
+        }
+        return res.replace(/^一十/, '十');
+    }
+
+    function getDecompositionStr() {
+        let parts = [];
+        for (let i = 0; i < COL_COUNT; i++) {
+            let v = (abacusState[i].topActive * 5) + abacusState[i].bottomActive;
+            if (v > 0) parts.push(`${v}个${decompUnits[i]}`);
+        }
+        if (!parts.length) return '0个一';
+        if (parts.length === 1) return parts[0];
+        let last = parts.pop();
+        return parts.join('、') + ' 和 ' + last;
+    }
+
+    function handleTopClick(colIndex, beadIndex) {
+        if (isAnimating || isDrawMode) return;
+        let a = abacusState[colIndex].topActive;
+        let active = (a === 1 && beadIndex === 1) || a === 2;
+        abacusState[colIndex].topActive = active ? (beadIndex === 1 ? 0 : 1) : (beadIndex === 0 ? 2 : 1);
+        renderBeads();
+        if (abacusState[colIndex].topActive >= 2) { isAnimating = true; setTimeout(() => checkTopCarry(colIndex), 400); }
+    }
+
+    function handleBottomClick(colIndex, beadIndex) {
+        if (isAnimating || isDrawMode) return;
+        let a = abacusState[colIndex].bottomActive;
+        abacusState[colIndex].bottomActive = beadIndex < a ? beadIndex : beadIndex + 1;
+        renderBeads();
+        if (abacusState[colIndex].bottomActive >= 5) { isAnimating = true; setTimeout(() => checkBottomCarry(colIndex), 400); }
+    }
+
+    function checkBottomCarry(c) {
+        let s = abacusState[c];
+        if (s.bottomActive >= 5) {
+            s.bottomActive -= 5; s.topActive += 1; renderBeads();
+            setTimeout(() => checkTopCarry(c), 400);
+        } else checkTopCarry(c);
+    }
+
+    function checkTopCarry(c) {
+        let s = abacusState[c];
+        if (s.topActive >= 2) {
+            s.topActive -= 2;
+            if (c > 0) { abacusState[c-1].bottomActive += 1; renderBeads(); setTimeout(() => checkBottomCarry(c-1), 400); }
+            else { renderBeads(); isAnimating = false; }
+        } else isAnimating = false;
+    }
+
+    function renderBeads() {
+        for (let i = 0; i < COL_COUNT; i++) {
+            const s = abacusState[i];
+            for (let j = 0; j < 2; j++) {
+                let top = j * 26;
+                if (s.topActive === 2 || (s.topActive === 1 && j === 1)) top += 24;
+                document.getElementById(`bead-top-${i}-${j}`).style.top = top + 'px';
+            }
+            for (let j = 0; j < 5; j++) {
+                let bot = (4 - j) * 26;
+                if (j < s.bottomActive) bot += 65;
+                document.getElementById(`bead-bottom-${i}-${j}`).style.bottom = bot + 'px';
+            }
+            document.getElementById(`digit-${i}`).innerText = (s.topActive * 5) + s.bottomActive;
+        }
+        const v = getAbacusValueStr();
+        if (isWriteVisible)  document.getElementById('res-write').innerText  = v;
+        if (isReadVisible)   document.getElementById('res-read').innerText   = getChineseNumber(v);
+        if (isDecompVisible) document.getElementById('res-decomp').innerText = getDecompositionStr();
+    }
+
+    function resetAbacus() {
+        if (isAnimating) return;
+        abacusState = Array.from({length: COL_COUNT}, () => ({topActive:0, bottomActive:0}));
+        renderBeads();
+    }
+
+    function toggleNumbers() {
+        isNumbersVisible = !isNumbersVisible;
+        const btn = document.getElementById('toggle-btn');
+        for (let i = 0; i < COL_COUNT; i++)
+            document.getElementById(`digit-${i}`).classList.toggle('hidden-text', !isNumbersVisible);
+        btn.innerHTML = isNumbersVisible ? "👁️ 隐藏黑色数字" : "🙈 显示黑色数字";
+        btn.style.backgroundColor = isNumbersVisible ? "#2ecc71" : "#e74c3c";
+    }
+
+    function toggleWrite() {
+        isWriteVisible = !isWriteVisible;
+        const card = document.getElementById('card-write');
+        const btn  = document.getElementById('btn-write');
+        if (isWriteVisible) {
+            document.getElementById('res-write').innerText = getAbacusValueStr();
+            card.style.display = 'block'; void card.offsetWidth; card.classList.add('show');
+            btn.innerHTML = '✍️ 隐藏写作'; btn.style.backgroundColor = '#2980b9';
+        } else {
+            card.classList.remove('show');
+            btn.innerHTML = '✍️ 显示写作'; btn.style.backgroundColor = '#3498db';
+            setTimeout(() => { if (!isWriteVisible) card.style.display = 'none'; }, 300);
+        }
+    }
+
+    function toggleRead() {
+        isReadVisible = !isReadVisible;
+        const card = document.getElementById('card-read');
+        const btn  = document.getElementById('btn-read');
+        if (isReadVisible) {
+            document.getElementById('res-read').innerText = getChineseNumber(getAbacusValueStr());
+            card.style.display = 'block'; void card.offsetWidth; card.classList.add('show');
+            btn.innerHTML = '🗣️ 隐藏读作'; btn.style.backgroundColor = '#8e44ad';
+        } else {
+            card.classList.remove('show');
+            btn.innerHTML = '🗣️ 显示读作'; btn.style.backgroundColor = '#9b59b6';
+            setTimeout(() => { if (!isReadVisible) card.style.display = 'none'; }, 300);
+        }
+    }
+
+    function toggleDecomp() {
+        isDecompVisible = !isDecompVisible;
+        const panel = document.getElementById('decomp-panel');
+        const btn   = document.getElementById('btn-decomp');
+        if (isDecompVisible) {
+            document.getElementById('res-decomp').innerText = getDecompositionStr();
+            panel.style.display = 'block'; void panel.offsetWidth; panel.classList.add('show');
+            btn.innerHTML = '🧩 隐藏数位分解'; btn.style.backgroundColor = '#d35400';
+        } else {
+            panel.classList.remove('show');
+            btn.innerHTML = '🧩 显示数位分解'; btn.style.backgroundColor = '#e67e22';
+            setTimeout(() => { if (!isDecompVisible) panel.style.display = 'none'; }, 300);
+        }
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>

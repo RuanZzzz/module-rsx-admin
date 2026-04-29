@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>计数器 · 拨珠版</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+
+  body{
+    min-height:100vh;
+    background:#fff9ee;
+    background-image:
+      radial-gradient(circle at 10% 20%,#ffe0f0 0%,transparent 40%),
+      radial-gradient(circle at 90% 80%,#d0f0ff 0%,transparent 40%),
+      radial-gradient(circle at 50% 50%,#fffbe0 0%,transparent 60%);
+    display:flex;flex-direction:column;align-items:center;
+    font-family:'楷体','KaiTi',serif;
+    padding:16px 10px 50px;
+    overflow-x:hidden;
+  }
+
+  .deco{position:fixed;pointer-events:none;z-index:0;font-size:1.4rem;animation:floaty 6s ease-in-out infinite;}
+  .deco:nth-child(1){top:8%;left:4%;animation-delay:0s;}
+  .deco:nth-child(2){top:15%;right:6%;animation-delay:1.5s;}
+  .deco:nth-child(3){top:70%;left:3%;animation-delay:3s;}
+  .deco:nth-child(4){top:75%;right:4%;animation-delay:4.5s;}
+  .deco:nth-child(5){top:45%;left:1%;animation-delay:2s;}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-14px) rotate(12deg);}}
+
+  .title-wrap{position:relative;z-index:1;text-align:center;margin-bottom:6px;}
+  h1{
+    font-size:2.4rem;
+    background:linear-gradient(135deg,#ff6b9d,#ffb347,#ff6b9d);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(2px 3px 0px #ffb34766);
+    letter-spacing:4px;
+  }
+  .subtitle{font-size:.9rem;color:#ffb347;letter-spacing:2px;margin-top:2px;}
+
+  .abacus-wrap-outer{position:relative;z-index:1;}
+
+  .abacus-outer{
+    flex-shrink:0;
+    background:linear-gradient(160deg,#ffe8c0,#ffd090);
+    border-radius:28px;padding:6px;
+    box-shadow:0 0 0 4px #ffb347,0 0 0 7px #ff8c6b,
+               0 12px 40px rgba(255,140,107,0.35),
+               inset 0 2px 6px rgba(255,255,255,0.6);
+  }
+  .abacus-inner{
+    background:linear-gradient(180deg,#d4854a 0%,#c07030 100%);
+    border-radius:22px;padding:0 8px;
+    box-shadow:inset 0 2px 4px rgba(255,255,255,0.2),
+               inset 0 -2px 4px rgba(0,0,0,0.15);
+  }
+  .beam{height:18px;background:linear-gradient(180deg,#8B4513,#cd853f,#8B4513);box-shadow:0 2px 6px rgba(0,0,0,0.2);}
+  .beam-top{border-radius:16px 16px 0 0;}
+  .beam-bottom{border-radius:0 0 16px 16px;}
+  .beads-area{display:flex;background:linear-gradient(180deg,#b86828,#a05820);padding:0 2px;}
+
+  .col{display:flex;flex-direction:column;align-items:center;width:66px;min-height:260px;position:relative;padding:8px 0;}
+  .rod{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:7px;border-radius:4px;z-index:0;}
+  .bead-track{
+    position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    width:52px;display:flex;flex-direction:column-reverse;align-items:center;gap:3px;z-index:2;
+  }
+  .bead{
+    width:50px;height:28px;border-radius:50%;flex-shrink:0;position:relative;
+    box-shadow:0 4px 8px rgba(0,0,0,0.25),inset 0 -3px 6px rgba(0,0,0,0.15);
+    animation:bPopIn .28s cubic-bezier(.34,1.8,.64,1);
+  }
+  .bead.removing{animation:bPopOut .18s ease-in forwards;}
+  .bead::before{content:"";position:absolute;top:4px;left:8px;width:18px;height:8px;border-radius:50%;background:rgba(255,255,255,0.55);}
+  .bead::after{content:"";position:absolute;bottom:5px;right:8px;width:10px;height:6px;border-radius:50%;background:rgba(255,100,100,0.2);}
+  @keyframes bPopIn{0%{transform:scale(0) rotate(-20deg);opacity:0;}70%{transform:scale(1.15) rotate(5deg);}100%{transform:scale(1) rotate(0deg);opacity:1;}}
+  @keyframes bPopOut{0%{transform:scale(1);opacity:1;}100%{transform:scale(0) rotate(20deg);opacity:0;}}
+
+  .col-footer{display:flex;background:linear-gradient(180deg,#8B4513,#6b3010);padding:0 2px;border-radius:0 0 18px 18px;}
+  .col-info{width:66px;display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;gap:5px;}
+  .col-label{
+    font-size:1.25rem;font-weight:bold;padding:2px 10px;border-radius:20px;color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,0.3);
+    box-shadow:0 2px 6px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .col-digit{
+    font-size:1.7rem;font-weight:bold;color:#fff;
+    width:44px;text-align:center;
+    background:rgba(0,0,0,0.2);border-radius:10px;padding:0 4px;
+    border:2px solid rgba(255,255,255,0.15);
+    transition:background .2s,box-shadow .2s;
+    outline:none;cursor:text;white-space:nowrap;overflow:hidden;
+  }
+  .col-digit:focus{background:rgba(0,0,0,0.5);box-shadow:0 0 0 2px rgba(255,255,255,0.5);}
+  .col-digit.hidden-digit{color:transparent;background:rgba(0,0,0,0.25);cursor:default;pointer-events:none;}
+  .col-digit.hidden-digit::after{content:"?";color:rgba(255,255,255,0.25);font-size:1.5rem;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+  .col-digit.shake{animation:shake .25s ease;}
+
+  .btn-row{display:flex;gap:6px;align-items:center;}
+  .ctrl-btn{
+    width:28px;height:28px;border:none;border-radius:50%;
+    font-size:1.1rem;font-weight:bold;cursor:pointer;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 0 rgba(0,0,0,0.2),0 4px 8px rgba(0,0,0,0.15);
+    transition:transform .1s,box-shadow .1s;
+    font-family:inherit;line-height:1;
+    border-bottom:3px solid rgba(0,0,0,0.15);
+  }
+  .ctrl-btn:hover{filter:brightness(1.1);}
+  .ctrl-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,0.2);border-bottom-width:1px;}
+  .ctrl-btn:disabled{opacity:.3;cursor:not-allowed;filter:none;}
+  .ctrl-btn.plus {background:linear-gradient(180deg,#7de87d,#27ae60);}
+  .ctrl-btn.minus{background:linear-gradient(180deg,#ff8f8f,#e74c3c);}
+
+  .col.highlight .bead-track{animation:flashCol .4s ease;}
+  @keyframes flashCol{0%{filter:brightness(1);}40%{filter:brightness(2.5) saturate(2);}100%{filter:brightness(1);}}
+
+  .side-cards{
+    position:absolute;left:calc(100% + 14px);top:0;
+    display:flex;flex-direction:column;gap:10px;width:150px;
+  }
+
+  .result-card{
+    background:#fff;border-radius:18px;padding:12px 10px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    box-shadow:0 4px 0 rgba(0,0,0,0.07),0 6px 20px rgba(0,0,0,0.08);
+    animation:cardIn .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes cardIn{from{transform:scale(.85) translateY(8px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+  .card-label{
+    font-size:.8rem;font-weight:bold;letter-spacing:2px;
+    padding:3px 12px;border-radius:20px;color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,0.2);white-space:nowrap;
+  }
+  .card-val{
+    font-size:1.4rem;font-weight:bold;letter-spacing:2px;
+    text-align:center;line-height:1.4;word-break:break-all;
+  }
+  .read-card{border:2.5px solid #ffe0b2;}
+  .read-card .card-label{background:linear-gradient(135deg,#ffcc80,#e67e22);}
+  .read-card .card-val{background:linear-gradient(135deg,#e67e22,#f39c12);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .write-card{border:2.5px solid #b2dfdb;}
+  .write-card .card-label{background:linear-gradient(135deg,#a8e6cf,#27ae60);}
+  .write-card .card-val{background:linear-gradient(135deg,#27ae60,#2ecc71);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+  /* ===== 工具栏 ===== */
+  .toolbar-wrap{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;align-items:center;
+    gap:8px;margin-top:16px;
+  }
+  .toolbar-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  .tool-btn{
+    border:none;border-radius:50px;padding:10px 18px;font-size:.92rem;
+    font-family:inherit;cursor:pointer;font-weight:bold;color:#fff;letter-spacing:1px;
+    box-shadow:0 4px 0 rgba(0,0,0,0.15),0 6px 16px rgba(0,0,0,0.1);
+    border-bottom:4px solid rgba(0,0,0,0.12);
+    transition:transform .1s,box-shadow .1s,filter .1s;
+  }
+  .tool-btn:hover{filter:brightness(1.08);}
+  .tool-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,0.15);border-bottom-width:1px;}
+  .tool-btn.on{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,0.15);filter:brightness(.85);border-bottom-width:1px;}
+  .btn-toggle{background:linear-gradient(180deg,#c9b1ff,#8c6fdf);}
+  .btn-hint  {background:linear-gradient(180deg,#80d8ff,#0984e3);}
+  .btn-read  {background:linear-gradient(180deg,#ffcc80,#e67e22);}
+  .btn-write {background:linear-gradient(180deg,#a8e6cf,#27ae60);}
+  .btn-reset {background:linear-gradient(180deg,#ffb3c6,#e05080);}
+  .btn-paint {background:linear-gradient(180deg,#ffd580,#f7971e);}
+
+  /* ===== 数位分解 ===== */
+  .breakdown-outer{
+    position:relative;z-index:1;
+    display:flex;gap:8px;flex-wrap:wrap;
+    justify-content:center;margin-top:10px;max-width:500px;
+  }
+  .bd{
+    font-size:.95rem;font-weight:bold;color:#fff;
+    border-radius:20px;padding:5px 13px;
+    box-shadow:0 3px 0 rgba(0,0,0,0.12);
+    border-bottom:3px solid rgba(0,0,0,0.1);
+    animation:bPopIn .32s cubic-bezier(.34,1.8,.64,1);
+    text-shadow:0 1px 2px rgba(0,0,0,0.2);
+  }
+  .empty-tip{color:#ccc;font-size:.88rem;}
+
+  /* 进位提示 */
+  .carry-toast{
+    position:fixed;top:24px;left:50%;
+    transform:translateX(-50%) translateY(-100px);
+    color:#fff;padding:12px 28px;border-radius:50px;
+    font-size:1.05rem;font-weight:bold;letter-spacing:2px;
+    box-shadow:0 6px 0 rgba(0,0,0,0.1),0 10px 30px rgba(0,0,0,0.15);
+    border-bottom:4px solid rgba(0,0,0,0.1);
+    transition:transform .45s cubic-bezier(.34,1.56,.64,1),opacity .45s;
+    opacity:0;z-index:999;pointer-events:none;white-space:nowrap;
+  }
+  .carry-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+  /* ===== 书写画板 ===== */
+  #paintCanvas{
+    position:fixed;top:0;left:0;
+    width:100vw;height:100vh;
+    z-index:500;cursor:crosshair;
+    display:none;touch-action:none;
+  }
+  #paintCanvas.active{display:block;}
+
+  /* 画板工具栏 */
+  #paintToolbar{
+    position:fixed;bottom:28px;left:50%;
+    transform:translateX(-50%);
+    z-index:600;display:none;
+    align-items:center;gap:10px;
+    background:rgba(255,255,255,0.96);
+    border-radius:60px;padding:10px 20px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.18),0 2px 8px rgba(0,0,0,0.10);
+    border:2px solid rgba(255,180,80,0.25);
+    backdrop-filter:blur(8px);
+    flex-wrap:wrap;justify-content:center;
+    max-width:96vw;
+  }
+  #paintToolbar.active{display:flex;}
+
+  .paint-label{font-size:.82rem;font-weight:bold;color:#aaa;letter-spacing:1px;}
+
+  .color-dot{
+    width:28px;height:28px;border-radius:50%;
+    border:3px solid transparent;cursor:pointer;
+    transition:transform .15s,border-color .15s,box-shadow .15s;
+    box-shadow:0 2px 6px rgba(0,0,0,0.18);flex-shrink:0;
+  }
+  .color-dot:hover{transform:scale(1.2);}
+  .color-dot.selected{
+    border-color:#fff;
+    box-shadow:0 0 0 3px currentColor,0 2px 8px rgba(0,0,0,0.25);
+    transform:scale(1.18);
+  }
+
+  #customColorWrap{position:relative;display:flex;align-items:center;}
+  #customColorBtn{
+    width:28px;height:28px;border-radius:50%;
+    border:3px solid #ddd;cursor:pointer;overflow:hidden;
+    background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);
+    box-shadow:0 2px 6px rgba(0,0,0,0.18);flex-shrink:0;
+    transition:transform .15s,border-color .15s,box-shadow .15s;
+  }
+  #customColorBtn:hover{transform:scale(1.2);}
+  #customColorBtn.selected{
+    border-color:#fff;
+    box-shadow:0 0 0 3px #888,0 2px 8px rgba(0,0,0,0.25);
+    transform:scale(1.18);
+  }
+  #colorPickerInput{position:absolute;width:0;height:0;opacity:0;pointer-events:none;}
+
+  .size-btn{
+    width:36px;height:36px;border-radius:50%;border:none;
+    background:linear-gradient(180deg,#f0f0f0,#d8d8d8);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:.75rem;font-weight:bold;color:#666;
+    box-shadow:0 2px 6px rgba(0,0,0,0.12);
+    transition:transform .1s,background .15s;flex-shrink:0;
+  }
+  .size-btn:hover{background:linear-gradient(180deg,#ffe0c0,#ffb347);color:#fff;}
+  .size-btn.sel{background:linear-gradient(180deg,#ffd580,#f7971e);color:#fff;
+    box-shadow:0 0 0 2px #f7971e,0 2px 8px rgba(247,151,30,0.3);}
+
+  .paint-divider{width:1px;height:28px;background:rgba(0,0,0,0.1);border-radius:2px;flex-shrink:0;}
+
+  .paint-action-btn{
+    border:none;border-radius:50px;padding:7px 14px;font-size:.82rem;
+    font-family:inherit;cursor:pointer;font-weight:bold;color:#fff;letter-spacing:1px;
+    box-shadow:0 3px 0 rgba(0,0,0,0.13);border-bottom:3px solid rgba(0,0,0,0.10);
+    transition:transform .1s,filter .1s;flex-shrink:0;
+  }
+  .paint-action-btn:hover{filter:brightness(1.1);}
+  .paint-action-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,0.13);border-bottom-width:1px;}
+  .paint-action-btn:disabled{opacity:.35;cursor:not-allowed;filter:none !important;transform:none !important;}
+  .btn-clear-paint{background:linear-gradient(180deg,#ffd6e0,#e05080);}
+  .btn-undo-paint {background:linear-gradient(180deg,#c9e7ff,#3498db);}
+  .btn-close-paint{background:linear-gradient(180deg,#b2f0e8,#27ae60);}
+
+  .eraser-btn{
+    width:36px;height:36px;border-radius:50%;border:none;
+    background:linear-gradient(180deg,#f5f5f5,#e0e0e0);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:1.1rem;
+    box-shadow:0 2px 6px rgba(0,0,0,0.12);
+    transition:transform .1s,background .15s;flex-shrink:0;
+  }
+  .eraser-btn:hover{background:linear-gradient(180deg,#ffe0e0,#ffb3b3);}
+  .eraser-btn.sel{
+    background:linear-gradient(180deg,#ffd6e0,#e05080);
+    box-shadow:0 0 0 2px #e05080,0 2px 8px rgba(224,80,128,0.25);
+  }
+
+  /* 撤销计数角标 */
+  #undoCountBadge{
+    position:absolute;top:-6px;right:-6px;
+    background:#3498db;color:#fff;
+    font-size:.65rem;font-weight:bold;
+    border-radius:50%;width:18px;height:18px;
+    display:none;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    pointer-events:none;
+  }
+  #undoBtnWrap{position:relative;flex-shrink:0;}
+
+  #paintHint{
+    position:fixed;top:0;left:0;right:0;
+    background:linear-gradient(90deg,#f7971e,#ffd200);
+    color:#fff;text-align:center;
+    font-size:.9rem;font-weight:bold;letter-spacing:2px;
+    padding:7px 0 6px;z-index:550;display:none;
+    box-shadow:0 2px 12px rgba(247,151,30,0.3);pointer-events:none;
+  }
+  #paintHint.active{display:block;}
+
+  /* 撤销闪烁动画 */
+  @keyframes undoFlash{
+    0%{opacity:1;}30%{opacity:.4;}60%{opacity:.85;}100%{opacity:1;}
+  }
+  .undo-flash{animation:undoFlash .35s ease;}
+</style>
+</head>
+<body>
+
+<span class="deco">🌟</span>
+<span class="deco">🍀</span>
+<span class="deco">🌈</span>
+<span class="deco">🎈</span>
+<span class="deco">⭐</span>
+
+<div class="carry-toast" id="carryToast"></div>
+<div id="paintHint">🖊️ 书写模式已开启 · 在画板上自由涂画 · Ctrl+Z 可撤销</div>
+
+<div class="title-wrap">
+  <h1>🧮 计数器 · 拨珠版</h1>
+  <div class="subtitle">点击 ＋ 拨入珠子 · 也可直接点数字修改 · 满十自动进一</div>
+</div>
+
+<div class="abacus-wrap-outer">
+  <div class="abacus-outer">
+    <div class="abacus-inner">
+      <div class="beam beam-top"></div>
+      <div class="beads-area" id="beadsArea"></div>
+      <div class="beam beam-bottom"></div>
+      <div class="col-footer" id="colFooter"></div>
+    </div>
+  </div>
+  <div class="side-cards" id="sideCards"></div>
+</div>
+
+<div class="toolbar-wrap">
+  <div class="toolbar-row">
+    <button class="tool-btn btn-toggle" id="btnToggle" onclick="toggleDigits()">👁 显示数字</button>
+    <button class="tool-btn btn-hint"   id="btnHint"   onclick="toggleHint()">💡 数位分解</button>
+    <button class="tool-btn btn-reset"                 onclick="resetAll()">🔄 重新来过</button>
+  </div>
+  <div class="toolbar-row">
+    <button class="tool-btn btn-read"  id="btnRead"  onclick="toggleRead()">🔊 读做</button>
+    <button class="tool-btn btn-write" id="btnWrite" onclick="toggleWrite()">✏️ 写作</button>
+    <button class="tool-btn btn-paint" id="btnPaint" onclick="togglePaint()">🖊️ 书写</button>
+  </div>
+</div>
+
+<div id="breakdownOuter"></div>
+
+<!-- 透明画板 -->
+<canvas id="paintCanvas"></canvas>
+
+<!-- 画板工具栏 -->
+<div id="paintToolbar">
+  <span class="paint-label">颜色</span>
+  <div class="color-dot selected" style="background:#e74c3c;" onclick="selectColor(this,'#e74c3c')"></div>
+  <div class="color-dot" style="background:#f39c12;" onclick="selectColor(this,'#f39c12')"></div>
+  <div class="color-dot" style="background:#f1c40f;" onclick="selectColor(this,'#f1c40f')"></div>
+  <div class="color-dot" style="background:#27ae60;" onclick="selectColor(this,'#27ae60')"></div>
+  <div class="color-dot" style="background:#3498db;" onclick="selectColor(this,'#3498db')"></div>
+  <div class="color-dot" style="background:#9b59b6;" onclick="selectColor(this,'#9b59b6')"></div>
+  <div class="color-dot" style="background:#fff;border:2px solid #ddd;" onclick="selectColor(this,'#ffffff')"></div>
+  <div id="customColorWrap">
+    <div id="customColorBtn" onclick="openColorPicker()" title="自定义颜色"></div>
+    <input type="color" id="colorPickerInput" value="#e74c3c" oninput="onCustomColor(this.value)" onchange="onCustomColor(this.value)">
+  </div>
+
+  <div class="paint-divider"></div>
+  <span class="paint-label">粗细</span>
+  <button class="size-btn"     data-size="3"  onclick="selectSize(this,3)">细</button>
+  <button class="size-btn sel" data-size="6"  onclick="selectSize(this,6)">中</button>
+  <button class="size-btn"     data-size="12" onclick="selectSize(this,12)">粗</button>
+  <button class="size-btn"     data-size="20" onclick="selectSize(this,20)">超</button>
+
+  <div class="paint-divider"></div>
+  <button class="eraser-btn" id="eraserBtn" onclick="toggleEraser()" title="橡皮擦">🧹</button>
+
+  <div class="paint-divider"></div>
+
+  <!-- 撤销按钮（带角标） -->
+  <div id="undoBtnWrap">
+    <button class="paint-action-btn btn-undo-paint" id="btnUndo" onclick="undoPaint()" disabled title="撤销上一笔 (Ctrl+Z)">↩ 撤销</button>
+    <div id="undoCountBadge">0</div>
+  </div>
+
+  <button class="paint-action-btn btn-clear-paint" onclick="clearPaint()">🗑 清空</button>
+  <button class="paint-action-btn btn-close-paint" onclick="togglePaint()">✅ 关闭</button>
+</div>
+
+<script>
+/* ===================== 算盘核心 ===================== */
+const COLS=[
+  {label:"万",unitName:"万",color:"#ff6b9d",light:"#ffb3d1",rod:"linear-gradient(90deg,#d44080,#ff6b9d,#d44080)",labelBg:"linear-gradient(135deg,#ff6b9d,#d44080)"},
+  {label:"千",unitName:"千",color:"#27ae60",light:"#7be0a0",rod:"linear-gradient(90deg,#1e8449,#2ecc71,#1e8449)",labelBg:"linear-gradient(135deg,#2ecc71,#1e8449)"},
+  {label:"百",unitName:"百",color:"#f39c12",light:"#ffd57e",rod:"linear-gradient(90deg,#c87d00,#f39c12,#c87d00)",labelBg:"linear-gradient(135deg,#ffd57e,#e67e00)"},
+  {label:"十",unitName:"十",color:"#3498db",light:"#90caf9",rod:"linear-gradient(90deg,#1a6fa0,#3498db,#1a6fa0)",labelBg:"linear-gradient(135deg,#74b9ff,#0984e3)"},
+  {label:"个",unitName:"一",color:"#9b59b6",light:"#d7aefb",rod:"linear-gradient(90deg,#7d3c98,#9b59b6,#7d3c98)",labelBg:"linear-gradient(135deg,#d7aefb,#7d3c98)"},
+];
+
+const state=[0,0,0,0,0];
+let digitsVisible=true, hintOn=false, readOn=false, writeOn=false;
+
+const beadsArea=document.getElementById("beadsArea");
+const colFooter=document.getElementById("colFooter");
+const sideCards=document.getElementById("sideCards");
+
+COLS.forEach((col,ci)=>{
+  const colEl=document.createElement("div");
+  colEl.className="col"; colEl.id=`col-${ci}`;
+  const rod=document.createElement("div");
+  rod.className="rod"; rod.style.background=col.rod;
+  colEl.appendChild(rod);
+  const track=document.createElement("div");
+  track.className="bead-track"; track.id=`track-${ci}`;
+  colEl.appendChild(track);
+  beadsArea.appendChild(colEl);
+
+  const info=document.createElement("div"); info.className="col-info";
+  const lbl=document.createElement("div");
+  lbl.className="col-label"; lbl.style.background=col.labelBg;
+  lbl.textContent=col.label;
+
+  const dgt=document.createElement("div");
+  dgt.className="col-digit"; dgt.id=`digit-${ci}`;
+  dgt.contentEditable="true"; dgt.textContent="0";
+  dgt.addEventListener("keydown",e=>{
+    const ok=["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Enter"];
+    if(ok.includes(e.key)){if(e.key==="Enter"){e.preventDefault();dgt.blur();}return;}
+    if(!/^[0-9]$/.test(e.key)) e.preventDefault();
+  });
+  dgt.addEventListener("paste",e=>{
+    e.preventDefault();
+    const t=(e.clipboardData||window.clipboardData).getData("text").replace(/\D/g,"");
+    document.execCommand("insertText",false,t);
+  });
+  dgt.addEventListener("focus",()=>{
+    setTimeout(()=>{
+      const r=document.createRange(); r.selectNodeContents(dgt);
+      const s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    },0);
+  });
+  dgt.addEventListener("blur",()=>{
+    const val=parseInt(dgt.textContent.trim(),10);
+    if(isNaN(val)||val<0||val>9){
+      dgt.classList.add("shake");
+      setTimeout(()=>dgt.classList.remove("shake"),260);
+      dgt.textContent=state[ci]; return;
+    }
+    if(val===state[ci]) return;
+    state[ci]=val; redrawCol(ci); updateCol(ci); refreshAll();
+  });
+
+  const btnRow=document.createElement("div"); btnRow.className="btn-row";
+  const btnM=document.createElement("button");
+  btnM.className="ctrl-btn minus"; btnM.id=`minus-${ci}`;
+  btnM.textContent="－"; btnM.disabled=true; btnM.onclick=()=>removeOne(ci);
+  const btnP=document.createElement("button");
+  btnP.className="ctrl-btn plus"; btnP.id=`plus-${ci}`;
+  btnP.textContent="＋"; btnP.onclick=()=>addOne(ci);
+  btnRow.append(btnM,btnP);
+  info.append(lbl,dgt,btnRow);
+  colFooter.appendChild(info);
+});
+
+function addOne(ci){
+  if(ci<0)return;
+  state[ci]++;
+  drawBead(ci,"add"); updateCol(ci);
+  if(state[ci]>=10) setTimeout(()=>doCarry(ci),320);
+  else refreshAll();
+}
+function doCarry(ci){
+  const colEl=document.getElementById(`col-${ci}`);
+  colEl.classList.add("highlight");
+  const labels=["万","千","百","十","个"];
+  showToast(
+    ci>0?`${labels[ci]}位满十啦！向${labels[ci-1]}位进一～`:`哇，万位也满十啦！`,
+    `linear-gradient(135deg,${COLS[ci].light},${COLS[ci].color})`
+  );
+  setTimeout(()=>{
+    clearBeads(ci,()=>{
+      state[ci]=0; updateCol(ci); colEl.classList.remove("highlight");
+      if(ci>0) setTimeout(()=>addOne(ci-1),80);
+      else{ state[0]=9; redrawCol(0); updateCol(0); refreshAll(); }
+    });
+  },480);
+}
+function removeOne(ci){
+  if(state[ci]<=0)return;
+  state[ci]--;
+  drawBead(ci,"remove"); updateCol(ci); refreshAll();
+}
+function drawBead(ci,action){
+  const track=document.getElementById(`track-${ci}`);
+  if(action==="add"){
+    const b=document.createElement("div"); b.className="bead";
+    b.style.background=`radial-gradient(ellipse at 38% 32%, ${COLS[ci].light}, ${COLS[ci].color} 70%)`;
+    track.appendChild(b);
+  } else {
+    const last=track.lastElementChild; if(!last)return;
+    last.classList.add("removing");
+    setTimeout(()=>{if(last.parentNode)last.parentNode.removeChild(last);},180);
+  }
+}
+function clearBeads(ci,cb){
+  const track=document.getElementById(`track-${ci}`);
+  const bs=[...track.children]; if(!bs.length){cb&&cb();return;}
+  bs.forEach((b,i)=>{b.style.animationDelay=`${i*30}ms`;b.classList.add("removing");});
+  setTimeout(()=>{track.innerHTML="";cb&&cb();},bs.length*30+190);
+}
+function redrawCol(ci){
+  const track=document.getElementById(`track-${ci}`); track.innerHTML="";
+  for(let i=0;i<state[ci];i++){
+    const b=document.createElement("div"); b.className="bead"; b.style.animation="none";
+    b.style.background=`radial-gradient(ellipse at 38% 32%, ${COLS[ci].light}, ${COLS[ci].color} 70%)`;
+    track.appendChild(b);
+  }
+}
+function updateCol(ci){
+  document.getElementById(`plus-${ci}`).disabled=(ci===0&&state[ci]>=9);
+  document.getElementById(`minus-${ci}`).disabled=(state[ci]<=0);
+  const dgt=document.getElementById(`digit-${ci}`);
+  if(digitsVisible){
+    dgt.classList.remove("hidden-digit");
+    if(document.activeElement!==dgt) dgt.textContent=state[ci];
+  } else {
+    dgt.classList.add("hidden-digit"); dgt.textContent="";
+  }
+}
+function getTotal(){return state[0]*10000+state[1]*1000+state[2]*100+state[3]*10+state[4];}
+function toReadStr(){
+  const total=getTotal();
+  if(total===0)return"零";
+  const cn=["零","一","二","三","四","五","六","七","八","九"];
+  const units=["","十","百","千","万"];
+  const d=[Math.floor(total/10000),Math.floor((total%10000)/1000),Math.floor((total%1000)/100),Math.floor((total%100)/10),total%10];
+  let res="",zf=false;
+  for(let i=0;i<5;i++){
+    if(d[i]===0){zf=true;}
+    else{if(zf&&res!=="")res+="零";zf=false;res+=cn[d[i]]+units[4-i];}
+  }
+  if(res.startsWith("一十"))res=res.slice(1);
+  return res;
+}
+function toWriteStr(){const t=getTotal();return t===0?"0":t.toString();}
+function refreshAll(){
+  if(readOn)  renderReadCard();
+  if(writeOn) renderWriteCard();
+  if(hintOn)  renderBreakdown();
+}
+function toggleRead(){
+  readOn=!readOn;
+  document.getElementById("btnRead").classList.toggle("on",readOn);
+  if(!readOn){removeCard("card-read");return;}
+  renderReadCard();
+}
+function renderReadCard(){
+  let card=document.getElementById("card-read");
+  if(!card){card=document.createElement("div");card.className="result-card read-card";card.id="card-read";sideCards.insertBefore(card,sideCards.firstChild);}
+  card.innerHTML=`<div class="card-label">🔊 读做</div><div class="card-val">${toReadStr()}</div>`;
+}
+function toggleWrite(){
+  writeOn=!writeOn;
+  document.getElementById("btnWrite").classList.toggle("on",writeOn);
+  if(!writeOn){removeCard("card-write");return;}
+  renderWriteCard();
+}
+function renderWriteCard(){
+  let card=document.getElementById("card-write");
+  if(!card){card=document.createElement("div");card.className="result-card write-card";card.id="card-write";sideCards.appendChild(card);}
+  card.innerHTML=`<div class="card-label">✏️ 写作</div><div class="card-val">${toWriteStr()}</div>`;
+}
+function removeCard(id){const el=document.getElementById(id);if(el)el.remove();}
+function toggleDigits(){
+  digitsVisible=!digitsVisible;
+  document.getElementById("btnToggle").textContent=digitsVisible?"👁 显示数字":"🙈 隐藏数字";
+  document.getElementById("btnToggle").classList.toggle("on",!digitsVisible);
+  COLS.forEach((_,ci)=>updateCol(ci));
+}
+function toggleHint(){
+  hintOn=!hintOn;
+  document.getElementById("btnHint").textContent=hintOn?"💡 收起分解":"💡 数位分解";
+  document.getElementById("btnHint").classList.toggle("on",hintOn);
+  const outer=document.getElementById("breakdownOuter");
+  if(!hintOn){outer.innerHTML="";return;}
+  renderBreakdown();
+}
+function renderBreakdown(){
+  const outer=document.getElementById("breakdownOuter");
+  const any=state.some(v=>v>0);
+  let html=`<div class="breakdown-outer">`;
+  if(!any){html+=`<span class="empty-tip">还没有拨珠哦，快来试试～ 🌟</span>`;}
+  else{state.forEach((v,i)=>{if(v>0){html+=`<span class="bd" style="background:linear-gradient(135deg,${COLS[i].light},${COLS[i].color})">${v}个${COLS[i].unitName}</span>`;}});}
+  html+=`</div>`;
+  outer.innerHTML=html;
+}
+function resetAll(){
+  COLS.forEach((_,ci)=>{clearBeads(ci,null);state[ci]=0;updateCol(ci);});
+  setTimeout(()=>refreshAll(),280);
+}
+function showToast(msg,bg){
+  const el=document.getElementById("carryToast");
+  el.textContent="🎉 "+msg; el.style.background=bg||"#ff6b9d";
+  el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),2400);
+}
+
+/* =====================================================================
+   书写画板功能（含按笔撤销）
+   =====================================================================
+
+   核心思路：
+   ┌─────────────────────────────────────────────────────────────┐
+   │  historyStack = [ ImageData, ImageData, … ]                 │
+   │  每次 mousedown 之前先把当前 canvas 快照 push 进去           │
+   │  每次 mouseup 后结束这一笔                                   │
+   │  撤销时 pop 最后一张快照并 putImageData 还原画面            │
+   └─────────────────────────────────────────────────────────────┘
+   最多保留 MAX_HISTORY 步，防止内存占用过多。
+   ===================================================================== */
+
+const canvas  = document.getElementById("paintCanvas");
+const ctx     = canvas.getContext("2d");
+
+const MAX_HISTORY = 30;          // 最多可撤销步数
+let historyStack  = [];          // 快照栈，存 ImageData
+
+let paintOn   = false;
+let isDrawing = false;
+let paintColor= "#e74c3c";
+let paintSize = 6;
+let isEraser  = false;
+let lastX=0, lastY=0;
+
+/* ── canvas 尺寸 ── */
+function resizeCanvas(){
+  const tmp=document.createElement("canvas");
+  tmp.width=canvas.width; tmp.height=canvas.height;
+  tmp.getContext("2d").drawImage(canvas,0,0);
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  ctx.drawImage(tmp,0,0);
+}
+window.addEventListener("resize",resizeCanvas);
+resizeCanvas();
+
+/* ── 历史快照管理 ── */
+function saveSnapshot(){
+  // 超出上限时移除最旧的
+  if(historyStack.length>=MAX_HISTORY) historyStack.shift();
+  historyStack.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+  updateUndoUI();
+}
+
+function updateUndoUI(){
+  const btn   = document.getElementById("btnUndo");
+  const badge = document.getElementById("undoCountBadge");
+  const n     = historyStack.length;
+  btn.disabled = (n===0);
+  if(n>0){
+    badge.style.display="flex";
+    badge.textContent=n;
+  } else {
+    badge.style.display="none";
+  }
+}
+
+/* ── 撤销一笔 ── */
+function undoPaint(){
+  if(historyStack.length===0) return;
+  const snap = historyStack.pop();
+  ctx.putImageData(snap,0,0);
+
+  // 撤销闪烁反馈
+  canvas.classList.add("undo-flash");
+  setTimeout(()=>canvas.classList.remove("undo-flash"),360);
+
+  updateUndoUI();
+}
+
+/* ── 开关画板 ── */
+function togglePaint(){
+  paintOn=!paintOn;
+  const btn =document.getElementById("btnPaint");
+  const tb  =document.getElementById("paintToolbar");
+  const hint=document.getElementById("paintHint");
+  btn.classList.toggle("on",paintOn);
+  canvas.classList.toggle("active",paintOn);
+  tb.classList.toggle("active",paintOn);
+  hint.classList.toggle("active",paintOn);
+  btn.textContent = paintOn ? "🖊️ 关闭书写" : "🖊️ 书写";
+}
+
+/* ── 清空 ── */
+function clearPaint(){
+  if(canvas.width===0) return;
+  saveSnapshot();                          // 清空前也保存一次，让清空也可撤销
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+/* ── 颜色 / 大小 / 橡皮 ── */
+function selectColor(el,color){
+  document.querySelectorAll(".color-dot").forEach(d=>d.classList.remove("selected"));
+  document.getElementById("customColorBtn").classList.remove("selected");
+  el.classList.add("selected");
+  paintColor=color; isEraser=false;
+  document.getElementById("eraserBtn").classList.remove("sel");
+  canvas.style.cursor="crosshair";
+}
+function openColorPicker(){ document.getElementById("colorPickerInput").click(); }
+function onCustomColor(color){
+  document.querySelectorAll(".color-dot").forEach(d=>d.classList.remove("selected"));
+  document.getElementById("customColorBtn").classList.add("selected");
+  document.getElementById("customColorBtn").style.background=color;
+  paintColor=color; isEraser=false;
+  document.getElementById("eraserBtn").classList.remove("sel");
+  canvas.style.cursor="crosshair";
+}
+function selectSize(el,size){
+  document.querySelectorAll(".size-btn").forEach(b=>b.classList.remove("sel"));
+  el.classList.add("sel"); paintSize=size;
+}
+function toggleEraser(){
+  isEraser=!isEraser;
+  document.getElementById("eraserBtn").classList.toggle("sel",isEraser);
+  canvas.style.cursor=isEraser?"cell":"crosshair";
+}
+
+/* ── 绘制工具函数 ── */
+function applyStyle(){
+  ctx.globalCompositeOperation = isEraser ? "destination-out" : "source-over";
+  ctx.strokeStyle = paintColor;
+  ctx.fillStyle   = paintColor;
+  ctx.lineWidth   = isEraser ? paintSize*2 : paintSize;
+  ctx.lineCap     = "round";
+  ctx.lineJoin    = "round";
+}
+function drawDot(x,y){
+  ctx.save(); applyStyle();
+  ctx.beginPath();
+  ctx.arc(x,y,(isEraser?paintSize*2:paintSize)/2,0,Math.PI*2);
+  ctx.fill(); ctx.restore();
+}
+function drawLine(x1,y1,x2,y2){
+  ctx.save(); applyStyle();
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+  ctx.stroke(); ctx.restore();
+}
+
+/* ── 鼠标事件 ── */
+canvas.addEventListener("mousedown",e=>{
+  saveSnapshot();          // ← 落笔前先存快照
+  isDrawing=true;
+  [lastX,lastY]=[e.clientX,e.clientY];
+  drawDot(e.clientX,e.clientY);
+});
+canvas.addEventListener("mousemove",e=>{
+  if(!isDrawing)return;
+  drawLine(lastX,lastY,e.clientX,e.clientY);
+  [lastX,lastY]=[e.clientX,e.clientY];
+});
+canvas.addEventListener("mouseup",  ()=>{ isDrawing=false; });
+canvas.addEventListener("mouseleave",()=>{ isDrawing=false; });
+
+/* ── 触摸事件 ── */
+canvas.addEventListener("touchstart",e=>{
+  e.preventDefault();
+  saveSnapshot();          // ← 同样在触摸开始前存快照
+  isDrawing=true;
+  const t=e.touches[0];
+  [lastX,lastY]=[t.clientX,t.clientY];
+  drawDot(t.clientX,t.clientY);
+},{passive:false});
+canvas.addEventListener("touchmove",e=>{
+  e.preventDefault();
+  if(!isDrawing)return;
+  const t=e.touches[0];
+  drawLine(lastX,lastY,t.clientX,t.clientY);
+  [lastX,lastY]=[t.clientX,t.clientY];
+},{passive:false});
+canvas.addEventListener("touchend",()=>{ isDrawing=false; });
+
+/* ── 键盘快捷键：Ctrl+Z 撤销 ── */
+document.addEventListener("keydown",e=>{
+  if(paintOn && (e.ctrlKey||e.metaKey) && e.key==="z"){
+    e.preventDefault();
+    undoPaint();
+  }
+});
+
+// 初始化 UI 状态
+updateUndoUI();
+</script>
+</body>
+</html>
