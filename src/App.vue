@@ -1,7 +1,26 @@
 <script setup>
 import { computed, ref, watchEffect } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Bell, FileText, Home, LogOut, Menu, Puzzle, Search, Wrench } from 'lucide-vue-next';
+import {
+  BarChart3,
+  Bell,
+  Box,
+  ClipboardList,
+  Database,
+  FileText,
+  Home,
+  LogOut,
+  Menu,
+  MessageSquare,
+  MonitorCog,
+  Puzzle,
+  Search,
+  Settings,
+  ShieldCheck,
+  UserCog,
+  Users,
+  Wrench
+} from 'lucide-vue-next';
 import { currentUser, logout } from './api/auth';
 import { getToken } from './api/http';
 
@@ -35,9 +54,11 @@ async function handleLogout() {
   <div v-else class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-mark">RSX</span>
+        <span class="brand-cube">
+          <Box :size="22" />
+        </span>
         <div>
-          <strong>Module RSX</strong>
+          <strong>RSX Admin</strong>
           <small>教学管理平台</small>
         </div>
       </div>
@@ -59,9 +80,21 @@ async function handleLogout() {
           <FileText :size="18" />
           <span>文章管理</span>
         </RouterLink>
+
+        <div class="nav-group-title">系统管理</div>
+        <span class="nav-item ghost"><Users :size="18" /><span>用户管理</span></span>
+        <span class="nav-item ghost"><UserCog :size="18" /><span>角色管理</span></span>
+        <span class="nav-item ghost"><ShieldCheck :size="18" /><span>权限管理</span></span>
+
+        <div class="nav-group-title">运营中心</div>
+        <span class="nav-item ghost"><ClipboardList :size="18" /><span>业务管理</span></span>
+        <span class="nav-item ghost"><BarChart3 :size="18" /><span>数据分析</span></span>
+        <span class="nav-item ghost"><MessageSquare :size="18" /><span>消息管理</span></span>
+        <span class="nav-item ghost"><MonitorCog :size="18" /><span>系统监控</span></span>
       </nav>
 
       <div class="sidebar-foot">
+        <span class="sidebar-cube"><Database :size="32" /></span>
         <span>本地容器环境</span>
         <strong>Docker Compose</strong>
       </div>
@@ -86,6 +119,10 @@ async function handleLogout() {
           </label>
           <button class="icon-button muted" type="button" title="通知">
             <Bell :size="18" />
+            <span class="notice-dot">2</span>
+          </button>
+          <button class="icon-button muted" type="button" title="设置">
+            <Settings :size="18" />
           </button>
           <div class="user-chip">
             <span class="user-avatar">{{ (user?.nickname || '系统管理员').slice(0, 1) }}</span>
