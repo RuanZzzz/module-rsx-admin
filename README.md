@@ -58,3 +58,28 @@ http://localhost:8083
 -> Compose 后端容器 8082
 -> MySQL / Redis
 ```
+
+## 容器化运行
+
+前端容器使用多阶段构建：
+
+```text
+node:22-alpine 构建 Vue 静态资源
+nginx:1.27-alpine 承载 dist 目录
+```
+
+Compose 启动后访问：
+
+```text
+http://localhost:8085
+```
+
+生产风格链路：
+
+```text
+浏览器 localhost:8085
+-> 前端 nginx 容器
+-> /api 转发到 Compose 服务名 server:8082
+-> 后端容器
+-> MySQL / Redis
+```
