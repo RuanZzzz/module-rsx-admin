@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watchEffect } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { FileText, Home, LogOut, Puzzle, Wrench } from 'lucide-vue-next';
+import { Bell, FileText, Home, LogOut, Menu, Puzzle, Search, Wrench } from 'lucide-vue-next';
 import { currentUser, logout } from './api/auth';
 import { getToken } from './api/http';
 
@@ -9,6 +9,7 @@ const route = useRoute();
 const router = useRouter();
 const user = ref(null);
 const isLoginPage = computed(() => route.path === '/login');
+const pageTitle = computed(() => route.meta?.title || '工作台');
 
 watchEffect(async () => {
   if (isLoginPage.value || !getToken()) {
@@ -36,8 +37,8 @@ async function handleLogout() {
       <div class="brand">
         <span class="brand-mark">RSX</span>
         <div>
-          <strong>管理端</strong>
-          <small>module-rsx</small>
+          <strong>Module RSX</strong>
+          <small>教学管理平台</small>
         </div>
       </div>
 
@@ -59,17 +60,44 @@ async function handleLogout() {
           <span>文章管理</span>
         </RouterLink>
       </nav>
+
+      <div class="sidebar-foot">
+        <span>本地容器环境</span>
+        <strong>Docker Compose</strong>
+      </div>
     </aside>
 
     <main class="workspace">
       <header class="topbar">
-        <div>
-          <strong>{{ user?.nickname || '系统管理员' }}</strong>
-          <span>{{ user?.username || 'admin' }}</span>
+        <div class="topbar-left">
+          <button class="icon-button muted" type="button" title="菜单">
+            <Menu :size="18" />
+          </button>
+          <div>
+            <strong>{{ pageTitle }}</strong>
+            <span>module-rsx / {{ pageTitle }}</span>
+          </div>
         </div>
-        <button class="icon-button" type="button" @click="handleLogout" title="退出登录">
-          <LogOut :size="18" />
-        </button>
+
+        <div class="topbar-right">
+          <label class="topbar-search">
+            <Search :size="16" />
+            <input placeholder="搜索模块、工具或文章" />
+          </label>
+          <button class="icon-button muted" type="button" title="通知">
+            <Bell :size="18" />
+          </button>
+          <div class="user-chip">
+            <span class="user-avatar">{{ (user?.nickname || '系统管理员').slice(0, 1) }}</span>
+            <div>
+              <strong>{{ user?.nickname || '系统管理员' }}</strong>
+              <span>{{ user?.username || 'admin' }}</span>
+            </div>
+          </div>
+          <button class="icon-button" type="button" @click="handleLogout" title="退出登录">
+            <LogOut :size="18" />
+          </button>
+        </div>
       </header>
       <RouterView />
     </main>

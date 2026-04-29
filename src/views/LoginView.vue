@@ -29,12 +29,23 @@ async function handleLogin() {
 
 <template>
   <main class="login-page">
+    <section class="login-visual">
+      <span class="brand-mark large">RSX</span>
+      <h1>Module RSX</h1>
+      <p>教学工具、内容文章和基础模块的统一管理入口</p>
+      <div class="login-metrics">
+        <span>Docker</span>
+        <span>Redis</span>
+        <span>MySQL</span>
+      </div>
+    </section>
+
     <section class="login-panel">
       <div class="login-title">
         <span class="brand-mark">RSX</span>
         <div>
-          <h1>module-rsx 管理端</h1>
-          <p>本地学习环境</p>
+          <h1>登录管理端</h1>
+          <p>使用管理员账号进入系统</p>
         </div>
       </div>
 

@@ -9,11 +9,11 @@ import ArticlesView from './views/ArticlesView.vue';
 import './styles.css';
 
 const routes = [
-  { path: '/login', component: LoginView },
-  { path: '/', component: DashboardView },
-  { path: '/modules', component: ModulesView },
-  { path: '/tools', component: ToolsView },
-  { path: '/articles', component: ArticlesView }
+  { path: '/login', component: LoginView, meta: { title: '登录' } },
+  { path: '/', component: DashboardView, meta: { title: '工作台' } },
+  { path: '/modules', component: ModulesView, meta: { title: '模块管理' } },
+  { path: '/tools', component: ToolsView, meta: { title: '教学工具' } },
+  { path: '/articles', component: ArticlesView, meta: { title: '文章管理' } }
 ];
 
 const router = createRouter({
