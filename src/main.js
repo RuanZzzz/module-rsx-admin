@@ -6,6 +6,7 @@ import DashboardView from './views/DashboardView.vue';
 import ModulesView from './views/ModulesView.vue';
 import ToolsView from './views/ToolsView.vue';
 import ArticlesView from './views/ArticlesView.vue';
+import OrdersView from './views/OrdersView.vue';
 import './styles.css';
 
 const routes = [
@@ -13,7 +14,8 @@ const routes = [
   { path: '/', component: DashboardView, meta: { title: '工作台' } },
   { path: '/modules', component: ModulesView, meta: { title: '模块管理' } },
   { path: '/tools', component: ToolsView, meta: { title: '教学工具' } },
-  { path: '/articles', component: ArticlesView, meta: { title: '文章管理' } }
+  { path: '/articles', component: ArticlesView, meta: { title: '文章管理' } },
+  { path: '/orders', component: OrdersView, meta: { title: '订单管理' } }
 ];
 
 const router = createRouter({

@@ -80,6 +80,10 @@ async function handleLogout() {
           <FileText :size="18" />
           <span>文章管理</span>
         </RouterLink>
+        <RouterLink to="/orders" class="nav-item">
+          <ClipboardList :size="18" />
+          <span>订单管理</span>
+        </RouterLink>
 
         <div class="nav-group-title">系统管理</div>
         <span class="nav-item ghost"><Users :size="18" /><span>用户管理</span></span>
@@ -87,7 +91,7 @@ async function handleLogout() {
         <span class="nav-item ghost"><ShieldCheck :size="18" /><span>权限管理</span></span>
 
         <div class="nav-group-title">运营中心</div>
-        <span class="nav-item ghost"><ClipboardList :size="18" /><span>业务管理</span></span>
+        <span class="nav-item ghost"><ClipboardList :size="18" /><span>业务统计</span></span>
         <span class="nav-item ghost"><BarChart3 :size="18" /><span>数据分析</span></span>
         <span class="nav-item ghost"><MessageSquare :size="18" /><span>消息管理</span></span>
         <span class="nav-item ghost"><MonitorCog :size="18" /><span>系统监控</span></span>

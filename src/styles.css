@@ -833,6 +833,31 @@ textarea:focus {
   color: #c2410c;
 }
 
+.status-pill.NOT_STARTED {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-pill.PRODUCING {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.status-pill.PACKED {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.status-pill.SHIPPING {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.status-pill.COMPLETED {
+  background: #ecfdf5;
+  color: #059669;
+}
+
 .tool-editor {
   display: grid;
   grid-template-columns: 1fr 1fr 1.4fr 130px 1.4fr auto;
@@ -864,6 +889,155 @@ textarea:focus {
   color: #334155;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
+}
+
+.orders-page {
+  gap: 16px;
+}
+
+.order-editor,
+.stack-form {
+  display: grid;
+  gap: 12px;
+}
+
+.order-editor {
+  grid-template-columns: 1fr 1fr 1.2fr 120px 1.2fr auto;
+  align-items: end;
+  padding: 16px;
+}
+
+.order-editor label,
+.stack-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.order-editor label span,
+.stack-form label span {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.order-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+  gap: 16px;
+}
+
+.data-table tr.selected {
+  background: #eff6ff;
+}
+
+.order-detail {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+.order-progress,
+.stack-form,
+.express-summary,
+.trace-list {
+  margin: 0 16px;
+}
+
+.progress-track {
+  position: relative;
+  height: 8px;
+  margin: 28px 10px 16px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+}
+
+.truck-marker {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+  transform: translate(-50%, -50%);
+  transition: left 0.3s ease;
+}
+
+.step-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.express-summary {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.express-summary span,
+.express-summary small {
+  color: #64748b;
+}
+
+.trace-list {
+  display: grid;
+  gap: 0;
+}
+
+.trace-list article {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 12px;
+  padding: 0 0 18px;
+}
+
+.trace-list article > span {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+.trace-list article > span::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 5px;
+  width: 2px;
+  height: 54px;
+  background: #dbe4ef;
+}
+
+.trace-list article:last-child > span::after {
+  display: none;
+}
+
+.trace-list p {
+  margin: 5px 0;
+  color: #475569;
+}
+
+.trace-list small {
+  color: #94a3b8;
 }
 
 .dashboard-page {
@@ -1275,6 +1449,11 @@ textarea:focus {
   .status-list,
   .tool-workspace,
   .tool-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .order-editor,
+  .order-layout {
     grid-template-columns: 1fr;
   }
 

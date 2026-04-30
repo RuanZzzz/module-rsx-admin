@@ -20,3 +20,12 @@ export const articleApi = {
   update: (id, payload) => postJson(`/api/articles/update?id=${encodeURIComponent(id)}`, payload),
   remove: (id) => postJson(`/api/articles/delete?id=${encodeURIComponent(id)}`, {})
 };
+
+export const orderApi = {
+  list: () => request('/api/orders'),
+  create: (payload) => postJson('/api/orders/create', payload),
+  update: (id, payload) => postJson(`/api/orders/update?id=${encodeURIComponent(id)}`, payload),
+  changeStatus: (id, payload) => postJson(`/api/orders/status/change?id=${encodeURIComponent(id)}`, payload),
+  bindExpress: (id, payload) => postJson(`/api/orders/express/bind?id=${encodeURIComponent(id)}`, payload),
+  trace: (id) => request(`/api/orders/express/trace?id=${encodeURIComponent(id)}`)
+};
