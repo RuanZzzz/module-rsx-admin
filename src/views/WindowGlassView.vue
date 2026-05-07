@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { Calculator, PanelTop, RefreshCw, Save, Shapes } from 'lucide-vue-next';
+import { Calculator, PanelTop, Plus, RefreshCw, Save, Shapes, Trash2 } from 'lucide-vue-next';
 import { windowGlassApi } from '../api/resources';
 
 const templates = ref([]);
@@ -9,6 +9,7 @@ const selectedCode = ref('');
 const result = ref(null);
 const errorMessage = ref('');
 const saving = ref(false);
+const customPoints = ref([]);
 const form = reactive({
   name: '',
   customerName: '',
@@ -29,11 +30,23 @@ const templateFields = computed(() => {
   }
 });
 const previewPoints = computed(() => buildPreviewPoints(selectedTemplate.value?.shapeType, form.params));
+const isCustomPolygon = computed(() => selectedTemplate.value?.shapeType === 'CUSTOM_POLYGON');
 
 function resetParams() {
   const nextParams = {};
   for (const field of templateFields.value) {
     nextParams[field.key] = field.defaultValue || 0;
+  }
+  if (isCustomPolygon.value) {
+    customPoints.value = [
+      { x: 0, y: 0 },
+      { x: 120, y: 0 },
+      { x: 120, y: 90 },
+      { x: 0, y: 90 }
+    ];
+    Object.assign(nextParams, buildCustomPointParams());
+  } else {
+    customPoints.value = [];
   }
   form.params = nextParams;
   result.value = null;
@@ -44,6 +57,9 @@ function selectTemplate(code) {
 }
 
 function buildPayload() {
+  if (isCustomPolygon.value) {
+    Object.assign(form.params, buildCustomPointParams());
+  }
   return {
     name: form.name,
     templateCode: selectedCode.value,
@@ -51,6 +67,32 @@ function buildPayload() {
     params: form.params,
     remark: form.remark
   };
+}
+
+function buildCustomPointParams() {
+  const params = { pointCount: customPoints.value.length };
+  customPoints.value.forEach((point, index) => {
+    params[`x${index + 1}`] = point.x || 0;
+    params[`y${index + 1}`] = point.y || 0;
+  });
+  return params;
+}
+
+function addPoint() {
+  if (customPoints.value.length >= 12) {
+    return;
+  }
+  const last = customPoints.value[customPoints.value.length - 1] || { x: 0, y: 0 };
+  customPoints.value.push({ x: last.x + 30, y: last.y });
+  result.value = null;
+}
+
+function removePoint(index) {
+  if (customPoints.value.length <= 3) {
+    return;
+  }
+  customPoints.value.splice(index, 1);
+  result.value = null;
 }
 
 async function loadData() {
@@ -96,23 +138,87 @@ function buildPreviewPoints(shapeType, params) {
   if (!shapeType) {
     return '';
   }
+  if (shapeType === 'CUSTOM_POLYGON') {
+    return scalePoints(customPoints.value);
+  }
+  if (shapeType === 'RECTANGLE') {
+    return scalePoints([
+      { x: 0, y: 0 },
+      { x: Number(params.width || 1), y: 0 },
+      { x: Number(params.width || 1), y: Number(params.height || 1) },
+      { x: 0, y: Number(params.height || 1) }
+    ]);
+  }
   if (shapeType === 'TRIANGLE') {
-    return '30,210 170,40 310,210';
+    return scalePoints([
+      { x: 0, y: Number(params.height || 1) },
+      { x: Number(params.base || 1) / 2, y: 0 },
+      { x: Number(params.base || 1), y: Number(params.height || 1) }
+    ]);
   }
   if (shapeType === 'TRAPEZOID') {
-    return '70,55 260,55 320,210 25,210';
+    const topWidth = Number(params.topWidth || 1);
+    const bottomWidth = Number(params.bottomWidth || 1);
+    const offset = Math.max((bottomWidth - topWidth) / 2, 0);
+    return scalePoints([
+      { x: offset, y: 0 },
+      { x: offset + topWidth, y: 0 },
+      { x: bottomWidth, y: Number(params.height || 1) },
+      { x: 0, y: Number(params.height || 1) }
+    ]);
   }
   if (shapeType === 'L_SHAPE') {
-    return '35,35 320,35 320,110 210,110 210,215 35,215';
+    const width = Number(params.width || 1);
+    const height = Number(params.height || 1);
+    const cutWidth = Math.min(Number(params.cutWidth || 1), width - 1);
+    const cutHeight = Math.min(Number(params.cutHeight || 1), height - 1);
+    return scalePoints([
+      { x: 0, y: 0 },
+      { x: width, y: 0 },
+      { x: width, y: height - cutHeight },
+      { x: width - cutWidth, y: height - cutHeight },
+      { x: width - cutWidth, y: height },
+      { x: 0, y: height }
+    ]);
   }
   if (shapeType === 'CORNER') {
-    return '40,45 220,45 310,105 310,215 130,215 40,155';
+    const frontWidth = Number(params.frontWidth || 1);
+    const sideWidth = Number(params.sideWidth || 1);
+    const height = Number(params.height || 1);
+    return scalePoints([
+      { x: 0, y: 0 },
+      { x: frontWidth, y: 0 },
+      { x: frontWidth + sideWidth * 0.45, y: height * 0.25 },
+      { x: frontWidth + sideWidth * 0.45, y: height },
+      { x: sideWidth * 0.45, y: height },
+      { x: 0, y: height * 0.75 }
+    ]);
   }
-  return '45,45 315,45 315,215 45,215';
+  return '';
+}
+
+function scalePoints(points) {
+  if (!points.length) {
+    return '';
+  }
+  const width = 280;
+  const height = 180;
+  const offsetX = 40;
+  const offsetY = 40;
+  const maxX = Math.max(...points.map((point) => Number(point.x) || 0));
+  const maxY = Math.max(...points.map((point) => Number(point.y) || 0));
+  const scale = Math.min(width / Math.max(maxX, 1), height / Math.max(maxY, 1));
+  return points
+    .map((point) => {
+      const x = offsetX + (Number(point.x) || 0) * scale;
+      const y = offsetY + (Number(point.y) || 0) * scale;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
 }
 
 function fieldValueLabel(key) {
-  return `${form.params[key] || 0} mm`;
+  return `${form.params[key] || 0} cm`;
 }
 
 watch(selectedTemplate, () => {
@@ -127,7 +233,7 @@ onMounted(loadData);
     <div class="page-heading">
       <div>
         <h1>玻璃面积计算</h1>
-        <p>选择常见窗型模板，输入毫米尺寸，后端复算每块玻璃面积</p>
+        <p>选择常见窗型或自定义多边形，输入厘米尺寸，后端复算每块玻璃面积</p>
       </div>
       <button class="secondary-button" type="button" @click="loadData">
         <RefreshCw :size="16" />
@@ -160,7 +266,7 @@ onMounted(loadData);
       <section class="panel window-form-panel">
         <div class="panel-header">
           <strong>尺寸参数</strong>
-          <span>单位：mm</span>
+          <span>单位：cm</span>
         </div>
         <div class="window-form">
           <label>
@@ -176,6 +282,30 @@ onMounted(loadData);
             <input v-model.number="form.params[field.key]" type="number" min="1" />
             <small>{{ fieldValueLabel(field.key) }}</small>
           </label>
+          <div v-if="isCustomPolygon" class="point-editor">
+            <div class="point-editor-head">
+              <strong>多边形点位</strong>
+              <button class="secondary-button compact" type="button" :disabled="customPoints.length >= 12" @click="addPoint">
+                <Plus :size="14" />
+                <span>加点</span>
+              </button>
+            </div>
+            <div v-for="(point, index) in customPoints" :key="index" class="point-row">
+              <span>P{{ index + 1 }}</span>
+              <label>
+                <small>X</small>
+                <input v-model.number="point.x" type="number" min="0" />
+              </label>
+              <label>
+                <small>Y</small>
+                <input v-model.number="point.y" type="number" min="0" />
+              </label>
+              <button class="icon-button muted" type="button" :disabled="customPoints.length <= 3" @click="removePoint(index)">
+                <Trash2 :size="15" />
+              </button>
+            </div>
+            <p>按窗户外轮廓顺时针或逆时针录入点位，系统会按多边形面积公式计算。</p>
+          </div>
           <label>
             <span>备注</span>
             <input v-model="form.remark" placeholder="例如：预留损耗后续报价处理" />

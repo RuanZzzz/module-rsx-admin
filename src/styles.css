@@ -1190,6 +1190,59 @@ textarea:focus {
   font-size: 12px;
 }
 
+.point-editor {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.point-editor-head,
+.point-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.point-editor-head {
+  justify-content: space-between;
+}
+
+.point-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 34px;
+}
+
+.point-row > span {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.point-row label {
+  gap: 4px;
+}
+
+.point-row label small {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.point-editor p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.compact {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
 .window-canvas {
   margin: 0 16px;
   border: 1px solid #dbe4ef;
