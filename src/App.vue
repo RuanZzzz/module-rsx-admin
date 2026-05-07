@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   UserCog,
   Users,
-  Wrench
+  Wrench,
+  Ruler
 } from 'lucide-vue-next';
 import { currentUser, logout } from './api/auth';
 import { getToken } from './api/http';
@@ -83,6 +84,10 @@ async function handleLogout() {
         <RouterLink to="/orders" class="nav-item">
           <ClipboardList :size="18" />
           <span>订单管理</span>
+        </RouterLink>
+        <RouterLink to="/window-glass" class="nav-item">
+          <Ruler :size="18" />
+          <span>玻璃计算</span>
         </RouterLink>
 
         <div class="nav-group-title">系统管理</div>

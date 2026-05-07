@@ -29,3 +29,10 @@ export const orderApi = {
   bindExpress: (id, payload) => postJson(`/api/orders/express/bind?id=${encodeURIComponent(id)}`, payload),
   trace: (id) => request(`/api/orders/express/trace?id=${encodeURIComponent(id)}`)
 };
+
+export const windowGlassApi = {
+  templates: () => request('/api/window-glass/templates'),
+  designs: () => request('/api/window-glass/designs'),
+  calculate: (payload) => postJson('/api/window-glass/calculate', payload),
+  create: (payload) => postJson('/api/window-glass/designs/create', payload)
+};

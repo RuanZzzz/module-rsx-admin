@@ -1109,6 +1109,141 @@ textarea:focus {
   line-height: 1.6;
 }
 
+.window-page {
+  gap: 16px;
+}
+
+.window-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(320px, 0.9fr) minmax(360px, 1.1fr);
+  gap: 16px;
+}
+
+.window-template-panel,
+.window-form-panel,
+.window-preview-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.template-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 4px 10px;
+  width: calc(100% - 32px);
+  margin: 0 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+  color: #172033;
+  text-align: left;
+  cursor: pointer;
+}
+
+.template-card span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  grid-row: span 2;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.template-card strong {
+  align-self: end;
+}
+
+.template-card small {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.template-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
+}
+
+.window-form {
+  display: grid;
+  gap: 12px;
+  margin: 0 16px 16px;
+}
+
+.window-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.window-form label span {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.window-form label small {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.window-canvas {
+  margin: 0 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    #f8fafc;
+  background-size: 24px 24px;
+}
+
+.window-canvas svg {
+  display: block;
+  width: 100%;
+  min-height: 260px;
+}
+
+.glass-result {
+  display: grid;
+  gap: 10px;
+  margin: 0 16px 16px;
+}
+
+.glass-result article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.glass-result article > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.glass-result small,
+.glass-result p {
+  color: #64748b;
+}
+
+.glass-result p {
+  margin: 0;
+  padding: 12px;
+}
+
 .dashboard-page {
   display: grid;
   gap: 20px;
@@ -1522,7 +1657,8 @@ textarea:focus {
   }
 
   .order-editor,
-  .order-layout {
+  .order-layout,
+  .window-layout {
     grid-template-columns: 1fr;
   }
 
