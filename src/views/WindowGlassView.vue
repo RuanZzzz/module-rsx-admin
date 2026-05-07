@@ -1,11 +1,18 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { Calculator, PanelTop, Plus, RefreshCw, Save, Shapes, Trash2 } from 'lucide-vue-next';
+import { Calculator, PanelTop, RefreshCw, RotateCcw, Save, Shapes, Trash2 } from 'lucide-vue-next';
 import { windowGlassApi } from '../api/resources';
 
+const unitOptions = [
+  { code: 'cm', label: '厘米 cm', toCm: 1 },
+  { code: 'mm', label: '毫米 mm', toCm: 0.1 },
+  { code: 'm', label: '米 m', toCm: 100 }
+];
 const templates = ref([]);
 const designs = ref([]);
 const selectedCode = ref('');
+const selectedUnit = ref('cm');
+const lastUnit = ref('cm');
 const result = ref(null);
 const errorMessage = ref('');
 const saving = ref(false);
@@ -31,6 +38,22 @@ const templateFields = computed(() => {
 });
 const previewPoints = computed(() => buildPreviewPoints(selectedTemplate.value?.shapeType, form.params));
 const isCustomPolygon = computed(() => selectedTemplate.value?.shapeType === 'CUSTOM_POLYGON');
+const customEdges = computed(() => {
+  if (customPoints.value.length < 2) {
+    return [];
+  }
+  return customPoints.value.map((point, index) => {
+    const nextIndex = index === customPoints.value.length - 1 ? 0 : index + 1;
+    const next = customPoints.value[nextIndex];
+    return {
+      key: `length${index + 1}`,
+      label: `边 ${index + 1}`,
+      from: `P${index + 1}`,
+      to: `P${nextIndex + 1}`,
+      drawnLength: Math.hypot(point.x - next.x, point.y - next.y)
+    };
+  });
+});
 
 function resetParams() {
   const nextParams = {};
@@ -38,12 +61,7 @@ function resetParams() {
     nextParams[field.key] = field.defaultValue || 0;
   }
   if (isCustomPolygon.value) {
-    customPoints.value = [
-      { x: 0, y: 0 },
-      { x: 120, y: 0 },
-      { x: 120, y: 90 },
-      { x: 0, y: 90 }
-    ];
+    customPoints.value = [];
     Object.assign(nextParams, buildCustomPointParams());
   } else {
     customPoints.value = [];
@@ -57,33 +75,56 @@ function selectTemplate(code) {
 }
 
 function buildPayload() {
+  const params = isCustomPolygon.value ? buildCustomPointParams() : buildCommonParams();
   if (isCustomPolygon.value) {
-    Object.assign(form.params, buildCustomPointParams());
+    Object.assign(form.params, params);
   }
   return {
     name: form.name,
     templateCode: selectedCode.value,
     customerName: form.customerName,
-    params: form.params,
+    params,
     remark: form.remark
   };
 }
 
 function buildCustomPointParams() {
-  const params = { pointCount: customPoints.value.length };
+  const params = { pointCount: customPoints.value.length, unitToCm: activeUnit().toCm };
   customPoints.value.forEach((point, index) => {
     params[`x${index + 1}`] = point.x || 0;
     params[`y${index + 1}`] = point.y || 0;
+    params[`length${index + 1}`] = form.params[`length${index + 1}`] || Number(edgeDefaultLength(index).toFixed(1));
   });
   return params;
 }
 
-function addPoint() {
-  if (customPoints.value.length >= 12) {
+function buildCommonParams() {
+  const unitToCm = activeUnit().toCm;
+  return Object.fromEntries(Object.entries(form.params).map(([key, value]) => [key, Number(value || 0) * unitToCm]));
+}
+
+function activeUnit() {
+  return unitOptions.find((item) => item.code === selectedUnit.value) || unitOptions[0];
+}
+
+function edgeDefaultLength(index) {
+  if (customPoints.value.length < 2) {
+    return 0;
+  }
+  const point = customPoints.value[index];
+  const next = customPoints.value[index === customPoints.value.length - 1 ? 0 : index + 1];
+  return Math.hypot(point.x - next.x, point.y - next.y);
+}
+
+function handleCanvasClick(event) {
+  if (!isCustomPolygon.value || customPoints.value.length >= 12) {
     return;
   }
-  const last = customPoints.value[customPoints.value.length - 1] || { x: 0, y: 0 };
-  customPoints.value.push({ x: last.x + 30, y: last.y });
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 360;
+  const y = ((event.clientY - rect.top) / rect.height) * 260;
+  customPoints.value.push({ x: Number(x.toFixed(1)), y: Number(y.toFixed(1)) });
+  syncCustomEdgeLengths();
   result.value = null;
 }
 
@@ -92,7 +133,22 @@ function removePoint(index) {
     return;
   }
   customPoints.value.splice(index, 1);
+  syncCustomEdgeLengths(true);
   result.value = null;
+}
+
+function clearCustomPoints() {
+  customPoints.value = [];
+  result.value = null;
+}
+
+function syncCustomEdgeLengths(reset = false) {
+  customPoints.value.forEach((_, index) => {
+    const key = `length${index + 1}`;
+    if (reset || !form.params[key]) {
+      form.params[key] = Number(edgeDefaultLength(index).toFixed(1));
+    }
+  });
 }
 
 async function loadData() {
@@ -139,7 +195,7 @@ function buildPreviewPoints(shapeType, params) {
     return '';
   }
   if (shapeType === 'CUSTOM_POLYGON') {
-    return scalePoints(customPoints.value);
+    return customPoints.value.map((point) => `${point.x},${point.y}`).join(' ');
   }
   if (shapeType === 'RECTANGLE') {
     return scalePoints([
@@ -218,11 +274,25 @@ function scalePoints(points) {
 }
 
 function fieldValueLabel(key) {
-  return `${form.params[key] || 0} cm`;
+  return `${form.params[key] || 0} ${selectedUnit.value}`;
 }
 
 watch(selectedTemplate, () => {
   resetParams();
+});
+
+watch(selectedUnit, (unit, oldUnit) => {
+  const oldMeta = unitOptions.find((item) => item.code === (oldUnit || lastUnit.value)) || unitOptions[0];
+  const newMeta = activeUnit();
+  const ratio = oldMeta.toCm / newMeta.toCm;
+  for (const key of Object.keys(form.params)) {
+    if (key.startsWith('x') || key.startsWith('y') || key === 'pointCount' || key === 'unitToCm') {
+      continue;
+    }
+    form.params[key] = Number(((Number(form.params[key]) || 0) * ratio).toFixed(2));
+  }
+  lastUnit.value = unit;
+  result.value = null;
 });
 
 onMounted(loadData);
@@ -233,7 +303,7 @@ onMounted(loadData);
     <div class="page-heading">
       <div>
         <h1>玻璃面积计算</h1>
-        <p>选择常见窗型或自定义多边形，输入厘米尺寸，后端复算每块玻璃面积</p>
+        <p>选择常见窗型或直接画异形轮廓，标注边长后由后端复算玻璃面积</p>
       </div>
       <button class="secondary-button" type="button" @click="loadData">
         <RefreshCw :size="16" />
@@ -266,7 +336,9 @@ onMounted(loadData);
       <section class="panel window-form-panel">
         <div class="panel-header">
           <strong>尺寸参数</strong>
-          <span>单位：cm</span>
+          <select v-model="selectedUnit" class="mini-select">
+            <option v-for="unit in unitOptions" :key="unit.code" :value="unit.code">{{ unit.label }}</option>
+          </select>
         </div>
         <div class="window-form">
           <label>
@@ -284,27 +356,24 @@ onMounted(loadData);
           </label>
           <div v-if="isCustomPolygon" class="point-editor">
             <div class="point-editor-head">
-              <strong>多边形点位</strong>
-              <button class="secondary-button compact" type="button" :disabled="customPoints.length >= 12" @click="addPoint">
-                <Plus :size="14" />
-                <span>加点</span>
+              <strong>边长标注</strong>
+              <button class="secondary-button compact" type="button" @click="clearCustomPoints">
+                <RotateCcw :size="14" />
+                <span>重画</span>
               </button>
             </div>
-            <div v-for="(point, index) in customPoints" :key="index" class="point-row">
-              <span>P{{ index + 1 }}</span>
+            <div v-for="edge in customEdges" :key="edge.key" class="point-row">
+              <span>{{ edge.label }}</span>
               <label>
-                <small>X</small>
-                <input v-model.number="point.x" type="number" min="0" />
+                <small>{{ edge.from }} -> {{ edge.to }}</small>
+                <input v-model.number="form.params[edge.key]" type="number" min="0.1" step="0.1" />
               </label>
-              <label>
-                <small>Y</small>
-                <input v-model.number="point.y" type="number" min="0" />
-              </label>
-              <button class="icon-button muted" type="button" :disabled="customPoints.length <= 3" @click="removePoint(index)">
+              <b>{{ selectedUnit }}</b>
+              <button class="icon-button muted" type="button" :disabled="customPoints.length <= 3" @click="removePoint(Number(edge.key.replace('length', '')) - 1)">
                 <Trash2 :size="15" />
               </button>
             </div>
-            <p>按窗户外轮廓顺时针或逆时针录入点位，系统会按多边形面积公式计算。</p>
+            <p>先在右侧画布按窗户外轮廓依次点击点位，再给每条边填写实际长度。</p>
           </div>
           <label>
             <span>备注</span>
@@ -329,16 +398,29 @@ onMounted(loadData);
           <span>{{ result?.totalArea || '0.0000' }} ㎡</span>
         </div>
         <div class="window-canvas">
-          <svg viewBox="0 0 360 260" role="img" aria-label="窗户形状预览">
+          <svg
+            viewBox="0 0 360 260"
+            role="img"
+            aria-label="窗户形状预览"
+            :class="{ drawable: isCustomPolygon }"
+            @click="handleCanvasClick"
+          >
             <defs>
               <linearGradient id="glassFill" x1="0" x2="1" y1="0" y2="1">
                 <stop offset="0%" stop-color="#dbeafe" />
                 <stop offset="100%" stop-color="#a7f3d0" />
               </linearGradient>
             </defs>
-            <polygon :points="previewPoints" fill="url(#glassFill)" stroke="#2563eb" stroke-width="4" />
+            <polygon v-if="customPoints.length >= 3 || !isCustomPolygon" :points="previewPoints" fill="url(#glassFill)" stroke="#2563eb" stroke-width="4" />
             <polyline :points="previewPoints" fill="none" stroke="#0f172a" stroke-width="1.2" opacity="0.18" />
+            <g v-if="isCustomPolygon">
+              <circle v-for="(point, index) in customPoints" :key="index" :cx="point.x" :cy="point.y" r="5" fill="#2563eb" />
+              <text v-for="(point, index) in customPoints" :key="`text-${index}`" :x="point.x + 8" :y="point.y - 8">P{{ index + 1 }}</text>
+            </g>
           </svg>
+          <p v-if="isCustomPolygon" class="canvas-tip">
+            {{ customPoints.length < 3 ? '在画布上依次点击至少 3 个点形成窗户轮廓' : '继续点击可加点，左侧可标注每条边长度' }}
+          </p>
         </div>
         <div class="glass-result">
           <article v-for="piece in result?.pieces || []" :key="piece.sortOrder">

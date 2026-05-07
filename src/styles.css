@@ -1260,6 +1260,25 @@ textarea:focus {
   min-height: 260px;
 }
 
+.window-canvas svg.drawable {
+  cursor: crosshair;
+}
+
+.window-canvas text {
+  fill: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.canvas-tip {
+  margin: 0;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
 .glass-result {
   display: grid;
   gap: 10px;
